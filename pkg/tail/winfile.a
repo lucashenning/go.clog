@@ -1,0 +1,146 @@
+!<arch>
+__.PKGDEF       0           0     0     644     12878     `
+go object windows amd64 go1.4.2 X:precisestack
+
+$$
+package winfile
+	import runtime "runtime"
+	import os "os"
+	import syscall "syscall"
+	import unsafe "unsafe"
+	type @"syscall".Handle uintptr
+	func @"".Open (@"".pathÂ·3 string "esc:0x0", @"".modeÂ·4 int, @"".permÂ·5 uint32) (@"".fdÂ·1 @"syscall".Handle, @"".errÂ·2 error)
+	type @"syscall".Filetime struct { LowDateTime uint32; HighDateTime uint32 }
+	func (@"syscall".ftÂ·2 *@"syscall".Filetime "esc:0x0") Nanoseconds () (? int64) { var @"syscall".nsecÂ·3 int64; ; @"syscall".nsecÂ·3 = int64(@"syscall".ftÂ·2.HighDateTime) << 0x20 + int64(@"syscall".ftÂ·2.LowDateTime); @"syscall".nsecÂ·3 -= 0x19DB1DED53E8000; @"syscall".nsecÂ·3 *= 0x64; return @"syscall".nsecÂ·3 }
+	type @"syscall".Win32finddata struct { FileAttributes uint32; CreationTime @"syscall".Filetime; LastAccessTime @"syscall".Filetime; LastWriteTime @"syscall".Filetime; FileSizeHigh uint32; FileSizeLow uint32; Reserved0 uint32; Reserved1 uint32; FileName [259]uint16; AlternateFileName [13]uint16 }
+	type @"os".dirInfo struct { @"os".data @"syscall".Win32finddata; @"os".needdata bool; @"os".path string; @"os".isempty bool }
+	import sync "sync" // indirect
+	type @"sync".Mutex struct { @"sync".state int32; @"sync".sema uint32 }
+	func (@"sync".mÂ·1 *@"sync".Mutex) Lock ()
+	func (@"sync".mÂ·1 *@"sync".Mutex) Unlock ()
+	type @"os".file struct { @"os".fd @"syscall".Handle; @"os".name string; @"os".dirinfo *@"os".dirInfo; @"os".l @"sync".Mutex; @"os".isConsole bool; @"os".lastbits []byte; @"os".readbuf []rune }
+	func (@"os".fileÂ·2 *@"os".file) @"os".close () (? error)
+	func (@"os".fÂ·2 *@"os".file "esc:0x0") @"os".isdir () (? bool) { return @"os".fÂ·2 != nil && @"os".fÂ·2.@"os".dirinfo != nil }
+	type @"os".FileMode uint32
+	func (@"os".mÂ·2 @"os".FileMode) IsDir () (? bool) { return @"os".mÂ·2 & @"os".FileMode(0x80000000) != @"os".FileMode(0x0) }
+	func (@"os".mÂ·2 @"os".FileMode) IsRegular () (? bool) { return @"os".mÂ·2 & @"os".FileMode(0x8F000000) == @"os".FileMode(0x0) }
+	func (@"os".mÂ·2 @"os".FileMode) Perm () (? @"os".FileMode) { return @"os".mÂ·2 & @"os".FileMode(0x1FF) }
+	func (@"os".mÂ·2 @"os".FileMode) String () (? string)
+	import time "time" // indirect
+	type @"time".zone struct { @"time".name string; @"time".offset int; @"time".isDST bool }
+	type @"time".zoneTrans struct { @"time".when int64; @"time".index uint8; @"time".isstd bool; @"time".isutc bool }
+	type @"time".Location struct { @"time".name string; @"time".zone []@"time".zone; @"time".tx []@"time".zoneTrans; @"time".cacheStart int64; @"time".cacheEnd int64; @"time".cacheZone *@"time".zone }
+	func (@"time".lÂ·2 *@"time".Location "esc:0x0") String () (? string)
+	func (@"time".lÂ·2 *@"time".Location "esc:0x0") @"time".firstZoneUsed () (? bool)
+	func (@"time".lÂ·2 *@"time".Location "esc:0x2") @"time".get () (? *@"time".Location)
+	func (@"time".lÂ·6 *@"time".Location "esc:0x1") @"time".lookup (@"time".secÂ·7 int64) (@"time".nameÂ·1 string, @"time".offsetÂ·2 int, @"time".isDSTÂ·3 bool, @"time".startÂ·4 int64, @"time".endÂ·5 int64)
+	func (@"time".lÂ·2 *@"time".Location "esc:0x0") @"time".lookupFirstZone () (? int)
+	func (@"time".lÂ·4 *@"time".Location "esc:0x0") @"time".lookupName (@"time".nameÂ·5 string "esc:0x0", @"time".unixÂ·6 int64) (@"time".offsetÂ·1 int, @"time".isDSTÂ·2 bool, @"time".okÂ·3 bool)
+	type @"time".Duration int64
+	func (@"time".dÂ·2 @"time".Duration) Hours () (? float64) { var @"time".hourÂ·3 @"time".Duration; ; @"time".hourÂ·3 = @"time".dÂ·2 / @"time".Duration(0x34630B8A000); var @"time".nsecÂ·4 @"time".Duration; ; @"time".nsecÂ·4 = @"time".dÂ·2 % @"time".Duration(0x34630B8A000); return float64(@"time".hourÂ·3) + float64(@"time".nsecÂ·4) * 0x9C5FFF26ED75Fp-93 }
+	func (@"time".dÂ·2 @"time".Duration) Minutes () (? float64) { var @"time".minÂ·3 @"time".Duration; ; @"time".minÂ·3 = @"time".dÂ·2 / @"time".Duration(0xDF8475800); var @"time".nsecÂ·4 @"time".Duration; ; @"time".nsecÂ·4 = @"time".dÂ·2 % @"time".Duration(0xDF8475800); return float64(@"time".minÂ·3) + float64(@"time".nsecÂ·4) * 0x9299FF347E9E9p-87 }
+	func (@"time".dÂ·2 @"time".Duration) Nanoseconds () (? int64) { return int64(@"time".dÂ·2) }
+	func (@"time".dÂ·2 @"time".Duration) Seconds () (? float64) { var @"time".secÂ·3 @"time".Duration; ; @"time".secÂ·3 = @"time".dÂ·2 / @"time".Duration(0x3B9ACA00); var @"time".nsecÂ·4 @"time".Duration; ; @"time".nsecÂ·4 = @"time".dÂ·2 % @"time".Duration(0x3B9ACA00); return float64(@"time".secÂ·3) + float64(@"time".nsecÂ·4) * 0x112E0BE826D695p-82 }
+	func (@"time".dÂ·2 @"time".Duration) String () (? string)
+	type @"time".Month int
+	func (@"time".mÂ·2 @"time".Month) String () (? string) { return @"time".months[@"time".mÂ·2 - @"time".Month(0x1)] }
+	type @"time".Weekday int
+	func (@"time".dÂ·2 @"time".Weekday) String () (? string) { return @"time".days[@"time".dÂ·2] }
+	type @"time".Time struct { @"time".sec int64; @"time".nsec int32; @"time".loc *@"time".Location }
+	func (@"time".tÂ·2 @"time".Time "esc:0x2") Add (@"time".dÂ·3 @"time".Duration) (? @"time".Time)
+	func (@"time".tÂ·2 @"time".Time "esc:0x2") AddDate (@"time".yearsÂ·3 int, @"time".monthsÂ·4 int, @"time".daysÂ·5 int) (? @"time".Time)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") After (@"time".uÂ·3 @"time".Time "esc:0x0") (? bool) { return @"time".tÂ·2.@"time".sec > @"time".uÂ·3.@"time".sec || @"time".tÂ·2.@"time".sec == @"time".uÂ·3.@"time".sec && @"time".tÂ·2.@"time".nsec > @"time".uÂ·3.@"time".nsec }
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Before (@"time".uÂ·3 @"time".Time "esc:0x0") (? bool) { return @"time".tÂ·2.@"time".sec < @"time".uÂ·3.@"time".sec || @"time".tÂ·2.@"time".sec == @"time".uÂ·3.@"time".sec && @"time".tÂ·2.@"time".nsec < @"time".uÂ·3.@"time".nsec }
+	func (@"time".tÂ·4 @"time".Time "esc:0x0") Clock () (@"time".hourÂ·1 int, @"time".minÂ·2 int, @"time".secÂ·3 int)
+	func (@"time".tÂ·4 @"time".Time "esc:0x0") Date () (@"time".yearÂ·1 int, @"time".monthÂ·2 @"time".Month, @"time".dayÂ·3 int)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Day () (? int)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Equal (@"time".uÂ·3 @"time".Time "esc:0x0") (? bool) { return @"time".tÂ·2.@"time".sec == @"time".uÂ·3.@"time".sec && @"time".tÂ·2.@"time".nsec == @"time".uÂ·3.@"time".nsec }
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Format (@"time".layoutÂ·3 string "esc:0x0") (? string)
+	func (@"time".tÂ·2 *@"time".Time "esc:0x0") GobDecode (@"time".dataÂ·3 []byte "esc:0x0") (? error)
+	func (@"time".tÂ·3 @"time".Time "esc:0x0") GobEncode () (? []byte, ? error)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Hour () (? int)
+	func (@"time".tÂ·3 @"time".Time "esc:0x0") ISOWeek () (@"time".yearÂ·1 int, @"time".weekÂ·2 int)
+	func (@"time".tÂ·2 @"time".Time "esc:0x2") In (@"time".locÂ·3 *@"time".Location "esc:0x2") (? @"time".Time)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") IsZero () (? bool) { return @"time".tÂ·2.@"time".sec == 0x0 && @"time".tÂ·2.@"time".nsec == 0x0 }
+	func (@"time".tÂ·2 @"time".Time "esc:0x2") Local () (? @"time".Time) { @"time".tÂ·2.@"time".loc = @"time".Local; return @"time".tÂ·2 }
+	func (@"time".tÂ·2 @"time".Time "esc:0x2") Location () (? *@"time".Location) { var @"time".lÂ·3 *@"time".Location; ; @"time".lÂ·3 = @"time".tÂ·2.@"time".loc; if @"time".lÂ·3 == nil { @"time".lÂ·3 = @"time".UTC }; return @"time".lÂ·3 }
+	func (@"time".tÂ·3 @"time".Time "esc:0x0") MarshalBinary () (? []byte, ? error)
+	func (@"time".tÂ·3 @"time".Time "esc:0x0") MarshalJSON () (? []byte, ? error)
+	func (@"time".tÂ·3 @"time".Time "esc:0x0") MarshalText () (? []byte, ? error)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Minute () (? int)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Month () (? @"time".Month)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Nanosecond () (? int) { return int(@"time".tÂ·2.@"time".nsec) }
+	func (@"time".tÂ·2 @"time".Time "esc:0x2") Round (@"time".dÂ·3 @"time".Duration) (? @"time".Time)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Second () (? int)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") String () (? string)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Sub (@"time".uÂ·3 @"time".Time "esc:0x0") (? @"time".Duration)
+	func (@"time".tÂ·2 @"time".Time "esc:0x2") Truncate (@"time".dÂ·3 @"time".Duration) (? @"time".Time)
+	func (@"time".tÂ·2 @"time".Time "esc:0x2") UTC () (? @"time".Time) { @"time".tÂ·2.@"time".loc = @"time".UTC; return @"time".tÂ·2 }
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Unix () (? int64) { return @"time".tÂ·2.@"time".sec + -0xE7791F700 }
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") UnixNano () (? int64) { return (@"time".tÂ·2.@"time".sec + -0xE7791F700) * 0x3B9ACA00 + int64(@"time".tÂ·2.@"time".nsec) }
+	func (@"time".tÂ·2 *@"time".Time "esc:0x0") UnmarshalBinary (@"time".dataÂ·3 []byte "esc:0x0") (? error)
+	func (@"time".tÂ·2 *@"time".Time "esc:0x0") UnmarshalJSON (@"time".dataÂ·3 []byte "esc:0x0") (@"time".errÂ·1 error)
+	func (@"time".tÂ·2 *@"time".Time "esc:0x0") UnmarshalText (@"time".dataÂ·3 []byte "esc:0x0") (@"time".errÂ·1 error)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Weekday () (? @"time".Weekday)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") Year () (? int)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") YearDay () (? int)
+	func (@"time".tÂ·3 @"time".Time "esc:0x0") Zone () (@"time".nameÂ·1 string, @"time".offsetÂ·2 int)
+	func (@"time".tÂ·2 @"time".Time "esc:0x0") @"time".abs () (? uint64)
+	func (@"time".tÂ·5 @"time".Time "esc:0x0") @"time".date (@"time".fullÂ·6 bool) (@"time".yearÂ·1 int, @"time".monthÂ·2 @"time".Month, @"time".dayÂ·3 int, @"time".ydayÂ·4 int)
+	func (@"time".tÂ·4 @"time".Time "esc:0x1") @"time".locabs () (@"time".nameÂ·1 string, @"time".offsetÂ·2 int, @"time".absÂ·3 uint64)
+	type @"os".FileInfo interface { IsDir() (? bool); ModTime() (? @"time".Time); Mode() (? @"os".FileMode); Name() (? string); Size() (? int64); Sys() (? interface {}) }
+	type @"os".File struct { @"os".? *@"os".file }
+	func (@"os".fÂ·2 *@"os".File) Chdir () (? error)
+	func (@"os".fÂ·2 *@"os".File) Chmod (@"os".modeÂ·3 @"os".FileMode) (? error)
+	func (@"os".fÂ·2 *@"os".File) Chown (@"os".uidÂ·3 int, @"os".gidÂ·4 int) (? error)
+	func (@"os".fileÂ·2 *@"os".File) Close () (? error)
+	func (@"os".fileÂ·2 *@"os".File "esc:0x0") Fd () (? uintptr) { if @"os".fileÂ·2 == nil { return 0xFFFFFFFFFFFFFFFF }; return uintptr(@"os".fileÂ·2.@"os".file.@"os".fd) }
+	func (@"os".fÂ·2 *@"os".File "esc:0x1") Name () (? string) { return @"os".fÂ·2.@"os".file.@"os".name }
+	func (@"os".fÂ·3 *@"os".File) Read (@"os".bÂ·4 []byte "esc:0x0") (@"os".nÂ·1 int, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File) ReadAt (@"os".bÂ·4 []byte "esc:0x0", @"os".offÂ·5 int64) (@"os".nÂ·1 int, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File) Readdir (@"os".nÂ·4 int) (@"os".fiÂ·1 []@"os".FileInfo, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File) Readdirnames (@"os".nÂ·4 int) (@"os".namesÂ·1 []string, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File) Seek (@"os".offsetÂ·4 int64, @"os".whenceÂ·5 int) (@"os".retÂ·1 int64, @"os".errÂ·2 error)
+	func (@"os".fileÂ·3 *@"os".File) Stat () (@"os".fiÂ·1 @"os".FileInfo, @"os".errÂ·2 error)
+	func (@"os".fÂ·2 *@"os".File "esc:0x0") Sync () (@"os".errÂ·1 error)
+	func (@"os".fÂ·2 *@"os".File) Truncate (@"os".sizeÂ·3 int64) (? error)
+	func (@"os".fÂ·3 *@"os".File) Write (@"os".bÂ·4 []byte "esc:0x0") (@"os".nÂ·1 int, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File) WriteAt (@"os".bÂ·4 []byte "esc:0x0", @"os".offÂ·5 int64) (@"os".nÂ·1 int, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File) WriteString (@"os".sÂ·4 string "esc:0x0") (@"os".retÂ·1 int, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File) @"os".pread (@"os".bÂ·4 []byte "esc:0x0", @"os".offÂ·5 int64) (@"os".nÂ·1 int, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File) @"os".pwrite (@"os".bÂ·4 []byte "esc:0x0", @"os".offÂ·5 int64) (@"os".nÂ·1 int, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File) @"os".read (@"os".bÂ·4 []byte "esc:0x0") (@"os".nÂ·1 int, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File) @"os".readConsole (@"os".bÂ·4 []byte "esc:0x0") (@"os".nÂ·1 int, @"os".errÂ·2 error)
+	func (@"os".fileÂ·3 *@"os".File) @"os".readdir (@"os".nÂ·4 int) (@"os".fiÂ·1 []@"os".FileInfo, @"os".errÂ·2 error)
+	func (@"os".fileÂ·3 *@"os".File) @"os".readdirnames (@"os".nÂ·4 int) (@"os".namesÂ·1 []string, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File) @"os".seek (@"os".offsetÂ·4 int64, @"os".whenceÂ·5 int) (@"os".retÂ·1 int64, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File) @"os".write (@"os".bÂ·4 []byte "esc:0x0") (@"os".nÂ·1 int, @"os".errÂ·2 error)
+	func (@"os".fÂ·3 *@"os".File "esc:0x0") @"os".writeConsole (@"os".bÂ·4 []byte "esc:0x0") (@"os".nÂ·1 int, @"os".errÂ·2 error)
+	func @"".OpenFile (@"".nameÂ·3 string, @"".flagÂ·4 int, @"".permÂ·5 @"os".FileMode) (@"".fileÂ·1 *@"os".File, @"".errÂ·2 error)
+	func @"".init ()
+	var @"time".months [12]string
+	var @"time".days [7]string
+	var @"time".Local *@"time".Location
+	var @"time".UTC *@"time".Location
+
+$$
+_go_.6          0           0     0     644     5859      `
+go object windows amd64 go1.4.2 X:precisestack
+
+!
+  go13ldos.asyscall.a ş"".Open  à	  Ø	eH‹%(   H‹‰    H;awè    ëãHƒì`H‹L$pHÇ„$       HÇ„$˜       Hƒù ufHÇD$@   H    H‰$H    H‰\$H    H‰\$H\$@H‰\$è    H‹L$ H‹D$(HÇ„$ˆ   ÿÿÿÿH‰Œ$   H‰„$˜   HƒÄ`ÃH‹\$hH‰$H‰L$è    H‹L$xH‹t$H‹D$H‹\$ H‰œ$˜   Hƒø H‰„$   tHÇ„$ˆ   ÿÿÿÿHƒÄ`Ã1ÀH‰ÊHƒâHƒú …=  ¸   €H‰ËHƒã@Hƒû t   @H‰ËHã   Hƒû t%ÿÿÿ¿ƒÈ½   1ÒH‰ËHã   Hƒû u1ÇD$H    HÇD$P    ÇD$X    ÇD$H   ÇD$X   H\$HH‰ÚH‰ËHãÀ   HûÀ   u[¹   H‰4$‰D$‰l$H‰T$‰L$ÇD$€   ÇD$     è    H‹T$(H‹L$0H‹D$8H‰”$ˆ   H‰Œ$   H‰„$˜   HƒÄ`ÃH‰ËHã@  Hû@  u¹   ëH‰ËHƒã@Hƒû@u
+¹   éyÿÿÿH‰ËHã   Hû   u
+¹   é\ÿÿÿ¹   éRÿÿÿHƒúu
+¸   @é¸şÿÿHƒú…®şÿÿ¸   Àé¤şÿÿ      .  0runtime.morestack_noctxt      $type.syscall.Errno   ¶  type.error   Î  6go.itab.syscall.Errno.error   ö  runtime.convT2I   ò  4syscall.UTF16PtrFromString   €  $syscall.CreateFile   pÀ  "".autotmp_0007  type.int "".autotmp_0005  type.uint32 "".autotmp_0004  type.uint32 "".autotmp_0002 ?$type.syscall.Errno 
+"".sa />type.syscall.SecurityAttributes "".err Ptype.error 
+"".fd @&type.syscall.Handle "".perm 0type.uint32 "".mode  type.int "".path  type.string 6!Àˆ¿ÀM¿À÷¿À€ ğ ¢ >f/
+19	;
+	  zö TgclocalsÂ·a296121fc318fcebf738ec806b394201 TgclocalsÂ·3280bececceccd33cb74587feedb1f9f   ªC:/Users/l.henning/Desktop/go-clog/src/github.com/ActiveState/tail/winfile/winfile.goş "".makeInheritSa     šeH‹%(   H‹‰    H;awè    ëãHƒìH    H‰$è    H‹D$Ç    Ç@   H‰D$HƒÄÃ      .  0runtime.morestack_noctxt   H  >type.syscall.SecurityAttributes   Z  "runtime.newobject      "".~r0  @type.*syscall.SecurityAttributes ! + P ~! 
+ ,$ TgclocalsÂ·a7a3692b8e27e823add69ec4239ba55f TgclocalsÂ·3280bececceccd33cb74587feedb1f9f   ªC:/Users/l.henning/Desktop/go-clog/src/github.com/ActiveState/tail/winfile/winfile.goş"".OpenFile  à  ÜeH‹%(   H‹‰    H;awè    ëãHƒìHHÇD$x    HÇ„$€       ‹\$h‰$è    ‹D$H‹\$PH‰$H‹\$XH‰\$H‹\$`HË   H‰\$‰D$è    H‹L$ H‹D$(H‹T$0H‰T$@Hƒø H‰D$8tHÇD$p    H‰D$xH‰”$€   HƒÄHÃH‰$H‹\$PH‰\$H‹\$XH‰\$è    H‹\$H‰\$pHÇD$x    HÇ„$€       HƒÄHÃ
+      .  0runtime.morestack_noctxt   |  "".syscallMode   Ş  "".Open   Œ  os.NewFile   p  "".e type.error "".err Ptype.error "".file @type.*os.File "".perm 0 type.os.FileMode "".flag  type.int "".name  type.string  !‹@ ğ 6QC  =³ TgclocalsÂ·a296121fc318fcebf738ec806b394201 TgclocalsÂ·d64e51a4c4bfeaa840e480961ec6b0b3   ªC:/Users/l.henning/Desktop/go-clog/src/github.com/ActiveState/tail/winfile/winfile.goş"".syscallMode  À  ¸‹L$1Ò‰Ëáÿ  	Ñ‰L$‰Øã  € ƒû t
+É   ‰L$‰Ãã  @ ƒû t
+É   ‰L$‰Ãã   ƒû t‰ËË   ‰\$Ã     
+"".autotmp_0014  type.uint32 "".autotmp_0013  type.uint32 "".autotmp_0012  type.uint32 "".o type.uint32 "".i   type.os.FileMode ` ` ( 
+
+  TgclocalsÂ·9308e7ef08d2cc2f72ae1228688dacf9 TgclocalsÂ·3280bececceccd33cb74587feedb1f9f   ªC:/Users/l.henning/Desktop/go-clog/src/github.com/ActiveState/tail/winfile/winfile.goş"".init  À  ¬eH‹%(   H‹‰    H;awè    ëã¶    €û t¶    €ûuÃè    Æ    è    è    Æ    Ã      .  0runtime.morestack_noctxt   @  "".initdoneÂ·   X  "".initdoneÂ·   n  "runtime.throwinit   ~ "".initdoneÂ·   Š  syscall.init   ”  os.init     "".initdoneÂ·        ` ` º` 
+ 6* TgclocalsÂ·3280bececceccd33cb74587feedb1f9f TgclocalsÂ·3280bececceccd33cb74587feedb1f9f   ªC:/Users/l.henning/Desktop/go-clog/src/github.com/ActiveState/tail/winfile/winfile.goş,6go.itab.syscall.Errno.error     şTgclocalsÂ·3280bececceccd33cb74587feedb1f9f           şTgclocalsÂ·a296121fc318fcebf738ec806b394201         R    şTgclocalsÂ·3280bececceccd33cb74587feedb1f9f           şTgclocalsÂ·a7a3692b8e27e823add69ec4239ba55f              şTgclocalsÂ·d64e51a4c4bfeaa840e480961ec6b0b3              şTgclocalsÂ·a296121fc318fcebf738ec806b394201         R    şTgclocalsÂ·3280bececceccd33cb74587feedb1f9f           şTgclocalsÂ·9308e7ef08d2cc2f72ae1228688dacf9             şTgclocalsÂ·3280bececceccd33cb74587feedb1f9f           şTgclocalsÂ·3280bececceccd33cb74587feedb1f9f           ş,"".initdoneÂ·  type.uint8   ş"".OpenÂ·f              "".Open   ş$runtime.convT2IÂ·f              runtime.convT2I   ş:syscall.UTF16PtrFromStringÂ·f              4syscall.UTF16PtrFromString   ş*syscall.CreateFileÂ·f              $syscall.CreateFile   ş,runtime.throwreturnÂ·f              &runtime.throwreturn   ş&"".makeInheritSaÂ·f               "".makeInheritSa   ş(runtime.newobjectÂ·f              "runtime.newobject   ş"".OpenFileÂ·f              "".OpenFile   ş""".syscallModeÂ·f              "".syscallMode   şos.NewFileÂ·f              os.NewFile   ş"".initÂ·f              "".init   ş(runtime.throwinitÂ·f              "runtime.throwinit   şsyscall.initÂ·f              syscall.init   şos.initÂ·f              os.init   ş&go.string."runtime" 0  0               runtime    &go.string."runtime"   ş,go.importpath.runtime.                       &go.string."runtime"   şgo.string."os" 0  &               os    go.string."os"   ş"go.importpath.os.                       go.string."os"   ş&go.string."syscall" 0  0               syscall    &go.string."syscall"   ş,go.importpath.syscall.                       &go.string."syscall"   ş$go.string."unsafe" 0  .               unsafe    $go.string."unsafe"   ş*go.importpath.unsafe.                       $go.string."unsafe"   ş"runtime.zerovalue      ÿÿgo13ld 
