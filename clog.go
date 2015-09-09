@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"time"
-	//"io"
 	"io/ioutil"
 	"crypto/aes"
     "crypto/cipher"
@@ -21,8 +20,11 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"sync"
-	"strings"
+	"flag"
 )
+
+var configFlag = flag.String("config", "", "-config ./config.cfg")
+var debugFlag  = flag.Bool("debug", false, "use -debug to see debug messages")
 
 type Configuration struct {
 	KeyServer string
@@ -37,17 +39,24 @@ type PubKeyDTO struct {
 }
 
 type EventDTO struct {
-	Id string
-	Iv string
-	Ciphertext string
-	EncryptedSessionKey string
+	Id 					string 	`json:"_id"`
+	Iv 					string	`json:"iv"`
+	Ciphertext 			string	`json:"ciphertext"`
+	EncryptedSessionKey string	`json:"encrypted_session_key"`
 }
 
 func main() {
+	flag.Parse()
+	if *configFlag == "" {
+		log.Fatal("No Config File specified. Please provide one using -config ./config.cfg")
+	}
+	fmt.Println("config: ", *configFlag)
 	fmt.Println("gocLog started at", time.Now())
-	configuration := readConfig()
-	fmt.Println("Config Url:", configuration.KeyServer)
-	fmt.Println("Config Certificate:", configuration.Certificate)
+	debugMsg("DEBUG MODE IS ON!")
+	configuration := readConfig(*configFlag)
+	fmt.Println("Key-Server:", configuration.KeyServer)
+	fmt.Println("Log-Server:", configuration.LogServer)
+	fmt.Println("Certificate:", configuration.Certificate)
 
 	var wg sync.WaitGroup
 	for _, logPath := range configuration.Logpath {
@@ -58,30 +67,30 @@ func main() {
 }
 
 func watchFile(path string, keyServerUrl string, logServerUrl string, wg *sync.WaitGroup) {
-	fmt.Println("Started Watching Process for File: ", path)
+	fmt.Println("Watching file: ", path)
 	t, err := tail.TailFile(path, tail.Config{Follow: true})
 	if err != nil {
 		log.Fatal(err)
 	}
 	for line := range t.Lines {
-		fmt.Println(line.Text)
 		response := httpsRequest(keyServerUrl) // Public Key von Schluessel Server holen
 		var pubKeyDto PubKeyDTO
 		err := json.Unmarshal([]byte(response), &pubKeyDto)
 		if err != nil {
 			log.Fatal("Unmarshal failed", err)
 		}
-		fmt.Println("Id:", pubKeyDto.Id)
-		fmt.Println("Public Key:", pubKeyDto.PubKey)
+		debugMsg(fmt.Sprint("Id:", pubKeyDto.Id))
+		debugMsg(fmt.Sprint("Public Key:", pubKeyDto.PubKey))
 		ciphertext, iv, encrypted_session_key, err := encrypt(line.Text, pubKeyDto.PubKey)
 		if err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println("IV:", encodeBase64(iv))
-		fmt.Println("encrypted_session_key:", encodeBase64(encrypted_session_key))
-		fmt.Println("Ciphertext:", encodeBase64(ciphertext))
+		debugMsg(fmt.Sprint("IV:", encodeBase64(iv)))
+		debugMsg(fmt.Sprint("encrypted_session_key:", encodeBase64(encrypted_session_key)))
+		debugMsg(fmt.Sprint("Ciphertext:", encodeBase64(ciphertext)))
 		eventDTO := EventDTO{pubKeyDto.Id, encodeBase64(iv), encodeBase64(ciphertext), encodeBase64(encrypted_session_key)}
 		sendEventToLogServer(logServerUrl, eventDTO)
+		fmt.Println("Successfully sent log line to Log-Server. ID: ", pubKeyDto.Id)
 	}
 	wg.Done()
 }
@@ -96,10 +105,6 @@ func encrypt(plaintext, encodedPubKey string) ([]byte, []byte, []byte, error) {
     }
 	paddedPlainText := PKCS5Padding([]byte(plaintext), aesCipher.BlockSize())
     ciphertext := make([]byte, len(paddedPlainText))
-    //if _, err := io.ReadFull(cryptorand.Reader, iv); err != nil {
-    //    return nil, nil, nil, err
-    //}
-	//[aesCipher.BlockSize():]
     cbc := cipher.NewCBCEncrypter(aesCipher, iv) // Cipher Block Chaining
     cbc.CryptBlocks(ciphertext, paddedPlainText)
 
@@ -108,8 +113,7 @@ func encrypt(plaintext, encodedPubKey string) ([]byte, []byte, []byte, error) {
 	rsaBlock, _ := pem.Decode([]byte(encodedPubKey))
 	pubKey, err := x509.ParsePKIXPublicKey(rsaBlock.Bytes)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		log.Fatal(err)
 	}
 	rsaPubKey := pubKey.(*rsa.PublicKey)
 	encrypted_session_key, err := rsa.EncryptPKCS1v15(cryptorand.Reader, rsaPubKey, []byte(aesSessionKey))
@@ -129,21 +133,23 @@ func encodeBase64(src []byte) string {
 	return base64.StdEncoding.EncodeToString(src)
 }
 
-func decodeBase64(src string) []byte {
-	result, err := base64.StdEncoding.DecodeString(src)
-	if err != nil {
-		log.Fatal("Error: ", err)
+func debugMsg (msg string) {
+	if *debugFlag == true {
+		fmt.Println(msg)
 	}
-	return result
 }
 
-func readConfig() Configuration {
-	file, _ := os.Open("config.cfg")
+func readConfig(path string) Configuration {
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatal(err)
+	}
 	decoder := json.NewDecoder(file)
 	configuration := Configuration{}
-	err := decoder.Decode(&configuration)
+	err = decoder.Decode(&configuration)
 	if err != nil {
-		fmt.Println("error:", err)
+		fmt.Println("Could not json decode config file", path)
+		log.Fatal(err)
 	}
 	return configuration
 }
@@ -154,35 +160,35 @@ func httpsRequest(url string) string {
     }
     client := &http.Client{Transport: tr}
     response, err := client.Get(url)
-    if err != nil {
-        fmt.Println(err)
-    }
+	for err != nil {
+		fmt.Println("Error. Keine Verbindung zum Key-Server ("+url+"). Neuer Versuch in 10 Sek.")
+		time.Sleep(10 * time.Second)
+		response, err = client.Get(url)
+		if err == nil {
+			fmt.Println("Verbindung zu Key-Server wieder hergestellt!")
+		}
+	}
 	body, err := ioutil.ReadAll(response.Body)
 	return string(body)
 }
 
 func sendEventToLogServer(logServerUrl string, eventDTO EventDTO) {
 	jsonStr, err := json.Marshal(eventDTO)
-	jsonStr = []byte(renameFields(string(jsonStr)))
 	jsonBytes := []byte(jsonStr)
 	req, err := http.NewRequest("POST", logServerUrl, bytes.NewBuffer(jsonBytes))
 	req.Header.Set("X-Custom-Header", "myvalue")
 	req.Header.Set("Content-Type", "application/json")
-
 	client := &http.Client{}
 	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
+	for err != nil {
+		fmt.Println("Error. Keine Verbindung zum Log-Server ("+logServerUrl+"). Neuer Versuch in 10 Sek.")
+		time.Sleep(10 * time.Second)
+		resp, err = client.Do(req)
+		if err == nil {
+			fmt.Println("Verbindung zu Log-Server wieder hergestellt!")
+		}
 	}
 	defer resp.Body.Close()
-}
-
-func renameFields(jsonStr string) string {
-	jsonStr = strings.Replace(jsonStr,"Id","_id", -1)
-	jsonStr = strings.Replace(jsonStr,"Iv","iv", -1)
-	jsonStr = strings.Replace(jsonStr,"Ciphertext","ciphertext", -1)
-	jsonStr = strings.Replace(jsonStr,"EncryptedSessionKey","encrypted_session_key", -1)
-	return jsonStr
 }
 
 func RandStringBytes(n int) string {
