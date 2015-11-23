@@ -5,12 +5,12 @@ import (
 	"time"
 	"io/ioutil"
 	"crypto/aes"
-    "crypto/cipher"
+	"crypto/cipher"
 	"crypto/rsa"
-    cryptorand "crypto/rand"
+	cryptorand "crypto/rand"
 	mathrand "math/rand"
 	"net/http"
-    "crypto/tls"
+	"crypto/tls"
 	"encoding/json"
 	"github.com/ActiveState/tail"
 	"os"
@@ -73,40 +73,44 @@ func watchFile(path string, keyServerUrl string, logServerUrl string, wg *sync.W
 		log.Fatal(err)
 	}
 	for line := range t.Lines {
-		response := httpsRequest(keyServerUrl) // Public Key von Schluessel Server holen
-		var pubKeyDto PubKeyDTO
-		err := json.Unmarshal([]byte(response), &pubKeyDto)
-		if err != nil {
-			log.Fatal("Unmarshal failed", err)
-		}
-		debugMsg(fmt.Sprint("Id:", pubKeyDto.Id))
-		debugMsg(fmt.Sprint("Public Key:", pubKeyDto.PubKey))
-		ciphertext, iv, encrypted_session_key, err := encrypt(line.Text, pubKeyDto.PubKey)
-		if err != nil {
-			log.Fatal(err)
-		}
-		debugMsg(fmt.Sprint("IV:", encodeBase64(iv)))
-		debugMsg(fmt.Sprint("encrypted_session_key:", encodeBase64(encrypted_session_key)))
-		debugMsg(fmt.Sprint("Ciphertext:", encodeBase64(ciphertext)))
-		eventDTO := EventDTO{pubKeyDto.Id, encodeBase64(iv), encodeBase64(ciphertext), encodeBase64(encrypted_session_key)}
-		sendEventToLogServer(logServerUrl, eventDTO)
-		fmt.Println("Successfully sent log line to Log-Server. ID: ", pubKeyDto.Id)
+		go getEncryptAndSend(keyServerUrl, line.Text, logServerUrl)
 	}
 	wg.Done()
+}
+
+func getEncryptAndSend(keyServerUrl string, lineText string, logServerUrl string) {
+	response := httpsRequest(keyServerUrl) // Public Key von Schluessel Server holen
+	var pubKeyDto PubKeyDTO
+	err := json.Unmarshal([]byte(response), &pubKeyDto)
+	if err != nil {
+		log.Fatal("Unmarshal failed", err)
+	}
+	debugMsg(fmt.Sprint("Id:", pubKeyDto.Id))
+	debugMsg(fmt.Sprint("Public Key:", pubKeyDto.PubKey))
+	ciphertext, iv, encrypted_session_key, err := encrypt(lineText, pubKeyDto.PubKey)
+	if err != nil {
+		log.Fatal(err)
+	}
+	debugMsg(fmt.Sprint("IV:", encodeBase64(iv)))
+	debugMsg(fmt.Sprint("encrypted_session_key:", encodeBase64(encrypted_session_key)))
+	debugMsg(fmt.Sprint("Ciphertext:", encodeBase64(ciphertext)))
+	eventDTO := EventDTO{pubKeyDto.Id, encodeBase64(iv), encodeBase64(ciphertext), encodeBase64(encrypted_session_key)}
+	sendEventToLogServer(logServerUrl, eventDTO)
+	fmt.Println("Successfully sent log line to Log-Server. ID: ", pubKeyDto.Id)
 }
 
 func encrypt(plaintext, encodedPubKey string) ([]byte, []byte, []byte, error) {
 	// AES Encryption
 	aesSessionKey := RandStringBytes(32) // 32 Bytes = AES-256
-    aesCipher, err := aes.NewCipher([]byte(aesSessionKey))
+	aesCipher, err := aes.NewCipher([]byte(aesSessionKey))
 	iv := []byte(RandStringBytes(aesCipher.BlockSize()))
-    if err != nil {
-        return nil, nil, nil, err
-    }
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	paddedPlainText := PKCS5Padding([]byte(plaintext), aesCipher.BlockSize())
-    ciphertext := make([]byte, len(paddedPlainText))
-    cbc := cipher.NewCBCEncrypter(aesCipher, iv) // Cipher Block Chaining
-    cbc.CryptBlocks(ciphertext, paddedPlainText)
+	ciphertext := make([]byte, len(paddedPlainText))
+	cbc := cipher.NewCBCEncrypter(aesCipher, iv) // Cipher Block Chaining
+	cbc.CryptBlocks(ciphertext, paddedPlainText)
 
 	// RSA Encryption
 	encodedPubKey = fmt.Sprint("-----BEGIN RSA PUBLIC KEY-----\n",encodedPubKey,"\n-----END RSA PUBLIC KEY-----")
@@ -120,7 +124,7 @@ func encrypt(plaintext, encodedPubKey string) ([]byte, []byte, []byte, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-    return ciphertext, iv, encrypted_session_key, nil
+	return ciphertext, iv, encrypted_session_key, nil
 }
 
 func PKCS5Padding(src []byte, blockSize int) []byte {
@@ -156,10 +160,10 @@ func readConfig(path string) Configuration {
 
 func httpsRequest(url string) string {
 	tr := &http.Transport{
-        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-    }
-    client := &http.Client{Transport: tr}
-    response, err := client.Get(url)
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	response, err := client.Get(url)
 	for err != nil {
 		fmt.Println("Error. Keine Verbindung zum Key-Server ("+url+"). Neuer Versuch in 10 Sek.")
 		time.Sleep(10 * time.Second)
@@ -193,11 +197,9 @@ func sendEventToLogServer(logServerUrl string, eventDTO EventDTO) {
 
 func RandStringBytes(n int) string {
 	letterBytes := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    b := make([]byte, n)
-    for i := range b {
-        b[i] = letterBytes[mathrand.Intn(len(letterBytes))]
-    }
-    return string(b)
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = letterBytes[mathrand.Intn(len(letterBytes))]
+	}
+	return string(b)
 }
-
-
